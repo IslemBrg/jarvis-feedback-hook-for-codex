@@ -1,0 +1,64 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "__SCRIPT_PATH__ prompt",
+            "timeout": 60,
+            "statusMessage": "Codex TTS: prompt received"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "__SCRIPT_PATH__ stop",
+            "timeout": 60,
+            "statusMessage": "Codex TTS: response complete"
+          }
+        ]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "__SCRIPT_PATH__ permission",
+            "timeout": 60,
+            "statusMessage": "Codex TTS: permission requested"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "__SCRIPT_PATH__ pre_compact",
+            "timeout": 60,
+            "statusMessage": "Codex TTS: compacting context"
+          }
+        ]
+      }
+    ],
+    "PostCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "__SCRIPT_PATH__ post_compact",
+            "timeout": 60,
+            "statusMessage": "Codex TTS: context restored"
+          }
+        ]
+      }
+    ]
+  }
+}
