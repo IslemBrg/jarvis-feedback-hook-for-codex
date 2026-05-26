@@ -160,7 +160,7 @@ CODEX_TTS_HOOK_LOG=/tmp/my_codex_tts.log \
 ```text
 .agents/plugins/marketplace.json
 plugins/jarvis-feedback-hook-for-codex/.codex-plugin/plugin.json
-plugins/jarvis-feedback-hook-for-codex/hooks.json
+plugins/jarvis-feedback-hook-for-codex/hooks/hooks.json
 plugins/jarvis-feedback-hook-for-codex/scripts/speak_event.py
 ```
 
