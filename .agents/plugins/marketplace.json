@@ -1,0 +1,20 @@
+{
+  "name": "jarvis-feedback",
+  "interface": {
+    "displayName": "JARVIS Feedback"
+  },
+  "plugins": [
+    {
+      "name": "jarvis-feedback-hook-for-codex",
+      "source": {
+        "source": "local",
+        "path": "./plugins/jarvis-feedback-hook-for-codex"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

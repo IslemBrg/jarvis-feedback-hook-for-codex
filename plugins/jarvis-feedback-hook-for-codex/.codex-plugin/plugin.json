@@ -1,0 +1,39 @@
+{
+  "name": "jarvis-feedback-hook-for-codex",
+  "version": "1.1.0",
+  "description": "macOS speech feedback for Codex lifecycle hooks.",
+  "author": {
+    "name": "Islem Bargaoui",
+    "url": "https://github.com/IslemBrg"
+  },
+  "homepage": "https://github.com/IslemBrg/jarvis-feedback-hook-for-codex",
+  "repository": "https://github.com/IslemBrg/jarvis-feedback-hook-for-codex",
+  "license": "LicenseRef-PolyForm-Noncommercial-1.0.0",
+  "keywords": [
+    "codex",
+    "hooks",
+    "tts",
+    "macos",
+    "jarvis"
+  ],
+  "interface": {
+    "displayName": "JARVIS Feedback Hook",
+    "shortDescription": "Spoken macOS feedback for Codex events.",
+    "longDescription": "Adds lightweight macOS speech cues for Codex prompts, completion, permission gates, compaction events, and subagent lifecycle events.",
+    "developerName": "Islem Bargaoui",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive"
+    ],
+    "websiteURL": "https://github.com/IslemBrg/jarvis-feedback-hook-for-codex",
+    "privacyPolicyURL": "https://github.com/IslemBrg/jarvis-feedback-hook-for-codex/blob/main/README.md",
+    "termsOfServiceURL": "https://github.com/IslemBrg/jarvis-feedback-hook-for-codex/blob/main/LICENSE",
+    "defaultPrompt": [
+      "Install spoken Codex lifecycle feedback",
+      "Enable JARVIS-style hook notifications",
+      "Review my Codex hook speech setup"
+    ],
+    "brandColor": "#2563EB",
+    "screenshots": []
+  }
+}

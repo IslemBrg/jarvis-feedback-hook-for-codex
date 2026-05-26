@@ -149,12 +149,73 @@ POST_COMPACT_PHRASES = [
     "Ready to continue from the compressed state",
 ]
 
+SUBAGENT_START_PHRASES = [
+    "{agent} subagent is online",
+    "{agent} subagent initiated",
+    "{agent} is taking a parallel look",
+    "{agent} is now examining the problem",
+    "{agent} has joined the analysis",
+    "{agent} is spinning up a separate thread",
+    "{agent} is handling the side channel",
+    "{agent} is now running in parallel",
+    "{agent} is taking that thread",
+    "{agent} has been brought into the loop",
+]
+
+SUBAGENT_STOP_PHRASES = [
+    "{agent} subagent has finished",
+    "{agent} has returned with its findings",
+    "{agent} parallel pass is complete",
+    "{agent} has concluded its thread",
+    "{agent} is done with the side analysis",
+    "{agent} has handed back the result",
+    "{agent} has completed its pass",
+    "{agent} thread has settled",
+    "{agent} has wrapped its work",
+    "{agent} is back from the parallel lane",
+]
+
 PHRASES = {
     "prompt": PROMPT_PHRASES,
     "stop": STOP_PHRASES,
     "permission": PERMISSION_PHRASES,
     "pre_compact": PRE_COMPACT_PHRASES,
     "post_compact": POST_COMPACT_PHRASES,
+    "subagent_start": SUBAGENT_START_PHRASES,
+    "subagent_stop": SUBAGENT_STOP_PHRASES,
+}
+
+EVENT_ALIASES = {
+    "UserPromptSubmit": "prompt",
+    "Stop": "stop",
+    "PermissionRequest": "permission",
+    "PreCompact": "pre_compact",
+    "PostCompact": "post_compact",
+    "SubagentStart": "subagent_start",
+    "SubagentStop": "subagent_stop",
+}
+
+AGENT_TYPE_NAMES = {
+    "github": "GitHub",
+    "git-hub": "GitHub",
+    "jira": "Jira",
+    "jira-agent": "Jira",
+    "review": "review",
+    "reviewer": "review",
+}
+
+PROPER_SPEECH_STARTS = {
+    "API",
+    "CLI",
+    "DB",
+    "GitHub",
+    "GQL",
+    "Jira",
+    "MCP",
+    "PR",
+    "QA",
+    "UI",
+    "UX",
 }
 
 
@@ -195,10 +256,80 @@ def apply_sir_style(text):
         k=1,
     )[0]
     if style == "start":
+        words = re.findall(r"[A-Za-z][A-Za-z0-9]*", text)
+        preserve_initial = (
+            len(words) >= 2 and words[0][:1].isupper() and words[1][:1].isupper()
+        ) or (
+            words
+            and (
+                words[0] in PROPER_SPEECH_STARTS
+                or any(char.isupper() for char in words[0][1:])
+            )
+        )
+        if preserve_initial:
+            return f"Sir, {text}"
         return f"Sir, {text[:1].lower()}{text[1:]}"
     if style == "end":
         return f"{text}, sir"
     return text
+
+
+def normalize_event(value):
+    if not value:
+        return "prompt"
+    return EVENT_ALIASES.get(value, value)
+
+
+def find_first_string(value, keys):
+    if isinstance(value, dict):
+        for key, item in value.items():
+            if key in keys and isinstance(item, str):
+                return item
+            found = find_first_string(item, keys)
+            if found:
+                return found
+    elif isinstance(value, list):
+        for item in value:
+            found = find_first_string(item, keys)
+            if found:
+                return found
+    return None
+
+
+def humanize_agent_type(agent_type):
+    if not agent_type:
+        return "The subagent"
+
+    normalized = agent_type.strip()
+    if not normalized:
+        return "The subagent"
+
+    key = normalized.lower()
+    if key in AGENT_TYPE_NAMES:
+        return AGENT_TYPE_NAMES[key]
+
+    words = re.split(r"[_\-\s]+", normalized)
+    acronyms = {"api", "cli", "db", "gql", "mcp", "pr", "qa", "ui", "ux"}
+    readable = []
+    for word in words:
+        if not word:
+            continue
+        lower = word.lower()
+        if lower in acronyms:
+            readable.append(lower.upper())
+        else:
+            readable.append(lower.capitalize())
+
+    return " ".join(readable) or "The subagent"
+
+
+def subagent_phrase(event, hook_payload):
+    agent_type = find_first_string(hook_payload, {"agent_type", "agentType"})
+    agent = humanize_agent_type(agent_type)
+    template = random.choice(PHRASES[event])
+    phrase = template.format(agent=agent)
+    log_hook(f"subagent agent_type={agent_type!r} agent={agent!r}")
+    return apply_sir_style(phrase)
 
 
 def find_transcript_path(value):
@@ -425,10 +556,15 @@ def stop_phrase_from_transcript(hook_payload):
 
 
 def phrase_for_event(event, hook_payload):
+    event = normalize_event(event)
+
     if event == "stop":
         transcript_phrase = stop_phrase_from_transcript(hook_payload)
         if transcript_phrase:
             return transcript_phrase
+
+    if event in {"subagent_start", "subagent_stop"}:
+        return subagent_phrase(event, hook_payload)
 
     options = PHRASES.get(event, PROMPT_PHRASES)
     phrase = random.choice(options) if isinstance(options, list) else options
@@ -442,7 +578,8 @@ def main():
     except json.JSONDecodeError:
         hook_payload = {}
 
-    event = sys.argv[1] if len(sys.argv) > 1 else "prompt"
+    payload_event = hook_payload.get("hook_event_name") if isinstance(hook_payload, dict) else None
+    event = normalize_event(sys.argv[1] if len(sys.argv) > 1 else payload_event or "prompt")
     phrase = phrase_for_event(event, hook_payload)
 
     try:
