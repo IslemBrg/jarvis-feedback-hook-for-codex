@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "./scripts/speak_event.py prompt",
+            "command": "../scripts/speak_event.py prompt",
             "timeout": 10,
             "statusMessage": "JARVIS: prompt received"
           }
@@ -17,7 +17,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "./scripts/speak_event.py stop",
+            "command": "../scripts/speak_event.py stop",
             "timeout": 10,
             "statusMessage": "JARVIS: response complete"
           }
@@ -29,7 +29,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "./scripts/speak_event.py permission",
+            "command": "../scripts/speak_event.py permission",
             "timeout": 10,
             "statusMessage": "JARVIS: permission requested"
           }
@@ -41,7 +41,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "./scripts/speak_event.py pre_compact",
+            "command": "../scripts/speak_event.py pre_compact",
             "timeout": 10,
             "statusMessage": "JARVIS: compacting context"
           }
@@ -53,7 +53,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "./scripts/speak_event.py post_compact",
+            "command": "../scripts/speak_event.py post_compact",
             "timeout": 10,
             "statusMessage": "JARVIS: context restored"
           }
@@ -65,7 +65,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "./scripts/speak_event.py subagent_start",
+            "command": "../scripts/speak_event.py subagent_start",
             "timeout": 10,
             "statusMessage": "JARVIS: subagent started"
           }
@@ -77,7 +77,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "./scripts/speak_event.py subagent_stop",
+            "command": "../scripts/speak_event.py subagent_stop",
             "timeout": 10,
             "statusMessage": "JARVIS: subagent stopped"
           }

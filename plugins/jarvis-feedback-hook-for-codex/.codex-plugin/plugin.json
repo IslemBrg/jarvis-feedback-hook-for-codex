@@ -1,6 +1,6 @@
 {
   "name": "jarvis-feedback-hook-for-codex",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "macOS speech feedback for Codex lifecycle hooks.",
   "author": {
     "name": "Islem Bargaoui",
