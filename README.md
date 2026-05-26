@@ -41,33 +41,50 @@ List installed voices:
 say -v "?"
 ```
 
-## Install
+## Installation
 
-Clone this repo, then run:
+Choose one installation path. Do not run both unless you intentionally want to replace the marketplace source.
+
+After installation, restart Codex. Plugin hooks may need to be trusted the first time Codex loads them.
+
+### Option 1: Codex Plugin Commands
+
+Use this if you want to install directly from GitHub without cloning the repository.
 
 ```bash
+codex plugin marketplace add IslemBrg/jarvis-feedback-hook-for-codex --ref v1.1.3
+codex plugin add jarvis-feedback-hook-for-codex --marketplace jarvis-feedback
+```
+
+Check the result:
+
+```bash
+codex plugin list --marketplace jarvis-feedback
+```
+
+You should see:
+
+```text
+jarvis-feedback-hook-for-codex@jarvis-feedback  installed, enabled  1.1.3
+```
+
+### Option 2: install.sh
+
+Use this if you cloned the repository and want the helper script to add the marketplace and install the plugin for you.
+
+```bash
+git clone https://github.com/IslemBrg/jarvis-feedback-hook-for-codex.git
+cd jarvis-feedback-hook-for-codex
 ./install.sh
 ```
 
-The installer adds this checkout as a Codex plugin marketplace and installs the plugin:
+By default, `install.sh` installs from the local checkout. That is useful for testing local changes before a release.
+
+To make `install.sh` install from GitHub instead of the local checkout:
 
 ```bash
-codex plugin marketplace add .
-codex plugin add jarvis-feedback-hook-for-codex --marketplace jarvis-feedback
+./install.sh --source IslemBrg/jarvis-feedback-hook-for-codex --ref v1.1.3
 ```
-
-Restart Codex if hooks do not fire immediately.
-
-## Install From GitHub
-
-After this repository has a tested release, users can install from GitHub with:
-
-```bash
-codex plugin marketplace add IslemBrg/jarvis-feedback-hook-for-codex --ref main
-codex plugin add jarvis-feedback-hook-for-codex --marketplace jarvis-feedback
-```
-
-The local `./install.sh` wrapper is only a convenience. Codex owns plugin installation and hook registration.
 
 ## Status And Uninstall
 
@@ -91,14 +108,22 @@ codex plugin marketplace remove jarvis-feedback
 
 ## Update
 
-Refresh configured Git marketplaces:
+If you installed from a version tag, switch to the newer tag when a new release is available:
+
+```bash
+codex plugin marketplace remove jarvis-feedback
+codex plugin marketplace add IslemBrg/jarvis-feedback-hook-for-codex --ref vNEXT
+codex plugin add jarvis-feedback-hook-for-codex --marketplace jarvis-feedback
+```
+
+If you installed from `main`, refresh the marketplace:
 
 ```bash
 codex plugin marketplace upgrade
 codex plugin add jarvis-feedback-hook-for-codex --marketplace jarvis-feedback
 ```
 
-If you installed from a local checkout, pull the repository first:
+If you installed from a local checkout with `./install.sh`, pull the repository first:
 
 ```bash
 git pull
