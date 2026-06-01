@@ -52,7 +52,7 @@ After installation, restart Codex. Plugin hooks may need to be trusted the first
 Use this if you want to install directly from GitHub without cloning the repository.
 
 ```bash
-codex plugin marketplace add IslemBrg/jarvis-feedback-hook-for-codex --ref v1.1.3
+codex plugin marketplace add IslemBrg/jarvis-feedback-hook-for-codex --ref v1.1.4
 codex plugin add jarvis-feedback-hook-for-codex --marketplace jarvis-feedback
 ```
 
@@ -65,7 +65,7 @@ codex plugin list --marketplace jarvis-feedback
 You should see:
 
 ```text
-jarvis-feedback-hook-for-codex@jarvis-feedback  installed, enabled  1.1.3
+jarvis-feedback-hook-for-codex@jarvis-feedback  installed, enabled  1.1.4
 ```
 
 ### Option 2: install.sh
@@ -83,7 +83,7 @@ By default, `install.sh` installs from the local checkout. That is useful for te
 To make `install.sh` install from GitHub instead of the local checkout:
 
 ```bash
-./install.sh --source IslemBrg/jarvis-feedback-hook-for-codex --ref v1.1.3
+./install.sh --source IslemBrg/jarvis-feedback-hook-for-codex --ref v1.1.4
 ```
 
 ## Status And Uninstall
