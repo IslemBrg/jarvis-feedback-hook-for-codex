@@ -197,11 +197,15 @@ EVENT_ALIASES = {
 
 AGENT_TYPE_NAMES = {
     "github": "GitHub",
+    "github-agent": "GitHub Agent",
     "git-hub": "GitHub",
+    "commit-agent": "Commit Agent",
+    "fast-execution-coder": "Fast Execution Coder",
     "jira": "Jira",
     "jira-agent": "Jira",
     "review": "review",
     "reviewer": "review",
+    "systems-architect": "Systems Architect",
 }
 
 PROPER_SPEECH_STARTS = {
@@ -294,6 +298,20 @@ def find_first_string(value, keys):
             if found:
                 return found
     return None
+
+
+def is_subagent_payload(value):
+    if isinstance(value, dict):
+        if find_first_string(value, {"agent_id", "agentId", "agent_type", "agentType"}):
+            return True
+        if value.get("is_subagent") is True or value.get("isSubagent") is True:
+            return True
+        for item in value.values():
+            if is_subagent_payload(item):
+                return True
+    elif isinstance(value, list):
+        return any(is_subagent_payload(item) for item in value)
+    return False
 
 
 def humanize_agent_type(agent_type):
@@ -580,6 +598,10 @@ def main():
 
     payload_event = hook_payload.get("hook_event_name") if isinstance(hook_payload, dict) else None
     event = normalize_event(sys.argv[1] if len(sys.argv) > 1 else payload_event or "prompt")
+    if event == "prompt" and is_subagent_payload(hook_payload):
+        log_hook("skipped_subagent_prompt")
+        return
+
     phrase = phrase_for_event(event, hook_payload)
 
     try:
