@@ -34,7 +34,7 @@ For approval requests, it speaks a short `tool_input.description` as Codex provi
 - macOS
 - Python 3
 - Codex CLI with plugin and hook support
-- The built-in macOS `say` command
+- The built-in macOS `say` and `afplay` commands
 - An installed macOS voice, such as `Jamie`
 
 List installed voices:
@@ -54,7 +54,7 @@ After installation, restart Codex. Plugin hooks may need to be trusted the first
 Use this if you want to install directly from GitHub without cloning the repository.
 
 ```bash
-codex plugin marketplace add IslemBrg/jarvis-feedback-hook-for-codex --ref v1.2.0
+codex plugin marketplace add IslemBrg/jarvis-feedback-hook-for-codex --ref v1.3.0
 codex plugin add jarvis-feedback-hook-for-codex --marketplace jarvis-feedback
 ```
 
@@ -67,7 +67,7 @@ codex plugin list --marketplace jarvis-feedback
 You should see:
 
 ```text
-jarvis-feedback-hook-for-codex@jarvis-feedback  installed, enabled  1.2.0
+jarvis-feedback-hook-for-codex@jarvis-feedback  installed, enabled  1.3.0
 ```
 
 ### Option 2: install.sh
@@ -85,7 +85,7 @@ By default, `install.sh` installs from the local checkout. That is useful for te
 To make `install.sh` install from GitHub instead of the local checkout:
 
 ```bash
-./install.sh --source IslemBrg/jarvis-feedback-hook-for-codex --ref v1.2.0
+./install.sh --source IslemBrg/jarvis-feedback-hook-for-codex --ref v1.3.0
 ```
 
 ## Status And Uninstall
@@ -144,6 +144,12 @@ CODEX_TTS_VOICE=Samantha codex
 
 If your Codex launcher preserves environment variables, the hooks will use that voice.
 
+## Meeting Volume
+
+When an app is actively using a microphone input, the hook plays its speech at `0.05` volume. It uses Core Audio to check input activity, `say` to synthesize the same voice into a temporary audio file, and `afplay` to play that file quietly. The temporary file is removed after playback. This changes only JARVIS speech volume, not the Mac's output volume or meeting audio.
+
+Microphone activity is a proxy for a meeting. A muted call may not be detected if its app stops the input stream; other microphone use can also trigger quiet playback. To force quiet or regular speech for a Codex launch, set `CODEX_TTS_MEETING_MODE=always` or `CODEX_TTS_MEETING_MODE=never`. The default is `auto`.
+
 ## Avoiding Voice Overlap
 
 Before speaking, the script runs:
@@ -152,7 +158,7 @@ Before speaking, the script runs:
 pkill -x say
 ```
 
-That prevents multiple hook events from talking over each other. The tradeoff is that it stops any currently running macOS `say` process, not only this plugin's speech.
+The hook also stops its previous quiet playback worker before starting another cue. This prevents hook events from talking over each other. The `pkill` command stops any currently running macOS `say` process, not only this plugin's speech.
 
 ## Testing
 

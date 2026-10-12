@@ -3,12 +3,15 @@
 # Licensed under the PolyForm Noncommercial License 1.0.0.
 # Commercial use requires separate written permission.
 
+import ctypes
 import json
 import os
 import random
 import re
+import signal
 import subprocess
 import sys
+import tempfile
 import time
 
 HOOK_LOG = os.environ.get("CODEX_TTS_HOOK_LOG", "/tmp/codex_tts_hook.log")
@@ -30,6 +33,9 @@ def configured_voice():
 
 
 VOICE = configured_voice()
+MEETING_VOLUME = "0.05"
+QUIET_WORKER_ARG = "--quiet-playback"
+QUIET_WORKER_PID_FILE = os.path.join(tempfile.gettempdir(), "jarvis-feedback-hook-quiet.pid")
 MAX_SAYABLE_CHARS = 180
 MAX_SAYABLE_WORDS = 24
 SHORT_LEAD_WORDS = 4
@@ -231,11 +237,119 @@ def log_hook(message):
         pass
 
 
+class AudioObjectPropertyAddress(ctypes.Structure):
+    _fields_ = [
+        ("selector", ctypes.c_uint32),
+        ("scope", ctypes.c_uint32),
+        ("element", ctypes.c_uint32),
+    ]
+
+
+def microphone_in_use():
+    """Use Core Audio's active input streams as a proxy for a call."""
+    if sys.platform != "darwin":
+        return False
+
+    try:
+        core_audio = ctypes.CDLL("/System/Library/Frameworks/CoreAudio.framework/CoreAudio")
+        get_size = core_audio.AudioObjectGetPropertyDataSize
+        get_size.argtypes = [
+            ctypes.c_uint32,
+            ctypes.POINTER(AudioObjectPropertyAddress),
+            ctypes.c_uint32,
+            ctypes.c_void_p,
+            ctypes.POINTER(ctypes.c_uint32),
+        ]
+        get_size.restype = ctypes.c_int32
+        get_data = core_audio.AudioObjectGetPropertyData
+        get_data.argtypes = [
+            ctypes.c_uint32,
+            ctypes.POINTER(AudioObjectPropertyAddress),
+            ctypes.c_uint32,
+            ctypes.c_void_p,
+            ctypes.POINTER(ctypes.c_uint32),
+            ctypes.c_void_p,
+        ]
+        get_data.restype = ctypes.c_int32
+
+        address = AudioObjectPropertyAddress(
+            int.from_bytes(b"prs#", "big"), int.from_bytes(b"glob", "big"), 0
+        )
+        size = ctypes.c_uint32()
+        status = get_size(1, ctypes.byref(address), 0, None, ctypes.byref(size))
+        if status != 0:
+            log_hook(f"microphone_check_failed status={status}")
+            return False
+        if not size.value or size.value % ctypes.sizeof(ctypes.c_uint32):
+            return False
+
+        processes = (ctypes.c_uint32 * (size.value // ctypes.sizeof(ctypes.c_uint32)))()
+        status = get_data(1, ctypes.byref(address), 0, None, ctypes.byref(size), processes)
+        if status != 0:
+            log_hook(f"microphone_check_failed status={status}")
+            return False
+
+        address.selector = int.from_bytes(b"piri", "big")
+        for process_id in processes[: size.value // ctypes.sizeof(ctypes.c_uint32)]:
+            active = ctypes.c_uint32()
+            active_size = ctypes.c_uint32(ctypes.sizeof(active))
+            status = get_data(
+                process_id,
+                ctypes.byref(address),
+                0,
+                None,
+                ctypes.byref(active_size),
+                ctypes.byref(active),
+            )
+            if status == 0 and active.value:
+                return True
+    except (OSError, ValueError, ctypes.ArgumentError) as error:
+        log_hook(f"microphone_check_failed error={error!r}")
+    return False
+
+
+def meeting_audio_active():
+    mode = os.environ.get("CODEX_TTS_MEETING_MODE", "auto").lower()
+    if mode == "always":
+        return True
+    if mode == "never":
+        return False
+    return microphone_in_use()
+
+
+def stop_quiet_playback():
+    try:
+        with open(QUIET_WORKER_PID_FILE) as pid_file:
+            pid = int(pid_file.read())
+        command = subprocess.run(
+            ["ps", "-ww", "-p", str(pid), "-o", "command="],
+            capture_output=True,
+            text=True,
+            check=False,
+        ).stdout
+        if os.path.abspath(__file__) in command and QUIET_WORKER_ARG in command:
+            os.killpg(pid, signal.SIGTERM)
+    except (OSError, ValueError, ProcessLookupError):
+        pass
+
+
+def quiet_playback(text):
+    signal.signal(signal.SIGTERM, lambda _signum, _frame: sys.exit(0))
+    try:
+        with tempfile.TemporaryDirectory(prefix="jarvis-feedback-") as folder:
+            audio = os.path.join(folder, "speech.aiff")
+            subprocess.run(["say", "-v", VOICE, "-o", audio, text], check=True)
+            subprocess.run(["afplay", "--volume", MEETING_VOLUME, audio], check=True)
+    except (OSError, subprocess.CalledProcessError) as error:
+        log_hook(f"quiet_playback_failed error={error!r}")
+
+
 def speak(text):
     if os.environ.get("CODEX_TTS_DRY_RUN") == "1":
         log_hook(f"dry_run text={text!r}")
         return
 
+    stop_quiet_playback()
     subprocess.run(
         ["pkill", "-x", "say"],
         stdout=subprocess.DEVNULL,
@@ -243,14 +357,24 @@ def speak(text):
         stdin=subprocess.DEVNULL,
         check=False,
     )
-    subprocess.Popen(
-        ["say", "-v", VOICE, text],
+    quiet = meeting_audio_active()
+    command = (
+        [sys.executable, os.path.abspath(__file__), QUIET_WORKER_ARG, text]
+        if quiet
+        else ["say", "-v", VOICE, text]
+    )
+    process = subprocess.Popen(
+        command,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
         stdin=subprocess.DEVNULL,
         start_new_session=True,
         close_fds=True,
     )
+    if quiet:
+        with open(QUIET_WORKER_PID_FILE, "w") as pid_file:
+            pid_file.write(str(process.pid))
+    log_hook(f"playback quiet={quiet}")
 
 
 def apply_sir_style(text):
@@ -613,6 +737,10 @@ def phrase_for_event(event, hook_payload):
 
 
 def main():
+    if len(sys.argv) > 1 and sys.argv[1] == QUIET_WORKER_ARG:
+        quiet_playback(sys.argv[2] if len(sys.argv) > 2 else "")
+        return
+
     # Drain hook input so Codex can pass any event payload without blocking on stdin.
     try:
         hook_payload = json.loads(sys.stdin.read() or "{}")
