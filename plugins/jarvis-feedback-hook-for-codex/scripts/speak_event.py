@@ -573,6 +573,23 @@ def stop_phrase_from_transcript(hook_payload):
     return phrase
 
 
+def permission_phrase_from_payload(hook_payload):
+    if not isinstance(hook_payload, dict):
+        return None
+
+    tool_input = hook_payload.get("tool_input")
+    if not isinstance(tool_input, dict):
+        return None
+
+    description = tool_input.get("description")
+    if not isinstance(description, str) or not is_sayable(description):
+        return None
+
+    phrase = clean_for_speech(description)
+    log_hook(f"permission_description phrase={phrase!r}")
+    return phrase
+
+
 def phrase_for_event(event, hook_payload):
     event = normalize_event(event)
 
@@ -580,6 +597,12 @@ def phrase_for_event(event, hook_payload):
         transcript_phrase = stop_phrase_from_transcript(hook_payload)
         if transcript_phrase:
             return transcript_phrase
+
+    if event == "permission":
+        description_phrase = permission_phrase_from_payload(hook_payload)
+        if description_phrase:
+            return description_phrase
+        return "Permission requested"
 
     if event in {"subagent_start", "subagent_stop"}:
         return subagent_phrase(event, hook_payload)
